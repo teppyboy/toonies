@@ -17,3 +17,5 @@ uuid = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+futures = "0.3"
+crossterm = { version = "0.28", features = ["event-stream"] }
