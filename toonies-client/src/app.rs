@@ -52,6 +52,14 @@ pub struct App {
     pub net_rx: tokio::sync::mpsc::Receiver<NetEvent>,
     /// Username pending login confirmation.
     pub pending_login: Option<Username>,
+    /// Set on first Ctrl+C; a second Ctrl+C within the same key sequence quits.
+    pub ctrl_c_pending: bool,
+    /// Input history, oldest entry first.
+    pub history: Vec<String>,
+    /// Index into `history` while browsing (None = not browsing).
+    pub history_pos: Option<usize>,
+    /// Saved input from before the user started browsing history.
+    pub history_draft: String,
 }
 
 impl App {
@@ -69,6 +77,10 @@ impl App {
             net_tx: None,
             net_rx,
             pending_login: None,
+            ctrl_c_pending: false,
+            history: Vec::new(),
+            history_pos: None,
+            history_draft: String::new(),
         }
     }
 

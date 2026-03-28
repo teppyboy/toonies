@@ -1,14 +1,31 @@
-use ratatui::crossterm::event::{Event, KeyCode, KeyModifiers};
+use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers};
 use toonies_common::{ClientMessage, ServerMessage, Username};
 use crate::app::{App, ConnectionStatus, NetEvent, SessionInfo};
 
 pub async fn handle_key(event: Event, app: &mut App) {
     let Event::Key(key) = event else { return };
+    if key.kind != KeyEventKind::Press {
+        return;
+    }
+
+    // Reset double-Ctrl+C pending state for any key that isn't Ctrl+C itself.
+    let is_ctrl_c = key.code == KeyCode::Char('c')
+        && key.modifiers.contains(KeyModifiers::CONTROL);
+    if !is_ctrl_c {
+        app.ctrl_c_pending = false;
+    }
 
     match key.code {
         KeyCode::Enter => {
             let line: String = app.input.drain(..).collect();
             app.cursor_pos = 0;
+            // Save to history, skipping consecutive duplicates.
+            if !line.is_empty() && app.history.last().map(|l| l != &line).unwrap_or(true) {
+                app.history.push(line.clone());
+            }
+            // Reset history browsing state.
+            app.history_pos = None;
+            app.history_draft.clear();
             if line.is_empty() {
                 return;
             }
@@ -27,8 +44,47 @@ pub async fn handle_key(event: Event, app: &mut App) {
                 }
             }
         }
+        KeyCode::Up => {
+            if app.history.is_empty() {
+                return;
+            }
+            match app.history_pos {
+                None => {
+                    app.history_draft = app.input.clone();
+                    let pos = app.history.len() - 1;
+                    app.history_pos = Some(pos);
+                    app.input = app.history[pos].clone();
+                }
+                Some(0) => {} // already at oldest entry
+                Some(pos) => {
+                    app.history_pos = Some(pos - 1);
+                    app.input = app.history[pos - 1].clone();
+                }
+            }
+            app.cursor_pos = app.input.len();
+        }
+        KeyCode::Down => {
+            match app.history_pos {
+                None => {}
+                Some(pos) if pos + 1 >= app.history.len() => {
+                    app.history_pos = None;
+                    app.input = app.history_draft.clone();
+                    app.cursor_pos = app.input.len();
+                }
+                Some(pos) => {
+                    app.history_pos = Some(pos + 1);
+                    app.input = app.history[pos + 1].clone();
+                    app.cursor_pos = app.input.len();
+                }
+            }
+        }
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            app.should_quit = true;
+            if app.ctrl_c_pending {
+                app.should_quit = true;
+            } else {
+                app.ctrl_c_pending = true;
+                app.push_info("Press Ctrl+C again to exit, or type /quit");
+            }
         }
         KeyCode::Esc => {
             app.should_quit = true;
@@ -67,6 +123,12 @@ pub async fn handle_key(event: Event, app: &mut App) {
         }
         KeyCode::PageDown => {
             app.scroll_offset = app.scroll_offset.saturating_sub(5);
+        }
+        KeyCode::Tab => {
+            if let Some(suffix) = crate::command::suggestion(&app.input) {
+                app.input.push_str(suffix);
+                app.cursor_pos = app.input.len();
+            }
         }
         _ => {}
     }
@@ -124,6 +186,13 @@ fn dispatch_server_message(msg: ServerMessage, app: &mut App) {
         }
         ServerMessage::SystemNotice { content, .. } => {
             app.push_system(&content);
+        }
+        ServerMessage::ChangePasswordResult { success, message } => {
+            if success {
+                app.push_system(&format!("Password changed: {message}"));
+            } else {
+                app.push_error(&format!("Password change failed: {message}"));
+            }
         }
         ServerMessage::Pong => {}
         ServerMessage::ServerShutdown { message } => {

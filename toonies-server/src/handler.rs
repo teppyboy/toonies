@@ -152,6 +152,72 @@ pub async fn process(msg: ClientMessage, state: &SharedState) -> Vec<ServerMessa
             vec![]
         }
 
+        ClientMessage::ChangePassword { session_id, old_password, new_password } => {
+            // Validate session → get username key
+            let username_key = {
+                let sessions = state.sessions.read().await;
+                match sessions.get(&session_id) {
+                    Some(s) => s.username.to_string(),
+                    None => {
+                        tracing::warn!("ChangePassword with invalid session {session_id}");
+                        return vec![ServerMessage::ChangePasswordResult {
+                            success: false,
+                            message: "Not authenticated".into(),
+                        }];
+                    }
+                }
+            };
+            // Look up stored hash
+            let stored_hash = {
+                let users = state.users.read().await;
+                match users.get(&username_key) {
+                    Some(r) => r.password_hash.clone(),
+                    None => {
+                        return vec![ServerMessage::ChangePasswordResult {
+                            success: false,
+                            message: "User record not found".into(),
+                        }];
+                    }
+                }
+            };
+            // Verify old password
+            let ok = match auth::verify_password(old_password, stored_hash).await {
+                Ok(v) => v,
+                Err(e) => {
+                    tracing::warn!("ChangePassword verification error: {e}");
+                    return vec![ServerMessage::ChangePasswordResult {
+                        success: false,
+                        message: "Internal error during verification".into(),
+                    }];
+                }
+            };
+            if !ok {
+                return vec![ServerMessage::ChangePasswordResult {
+                    success: false,
+                    message: "Old password is incorrect".into(),
+                }];
+            }
+            // Hash new password and update record
+            let new_hash = match auth::hash_password(new_password).await {
+                Ok(h) => h,
+                Err(e) => {
+                    tracing::warn!("ChangePassword hashing error: {e}");
+                    return vec![ServerMessage::ChangePasswordResult {
+                        success: false,
+                        message: "Internal error while updating password".into(),
+                    }];
+                }
+            };
+            state.users.write().await
+                .entry(username_key.clone())
+                .and_modify(|r| r.password_hash = new_hash);
+            tracing::info!("password changed for user: {username_key}");
+            vec![ServerMessage::ChangePasswordResult {
+                success: true,
+                message: "Password changed successfully".into(),
+            }]
+        }
+
         ClientMessage::Ping => vec![ServerMessage::Pong],
     }
 }

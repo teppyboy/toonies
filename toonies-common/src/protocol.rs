@@ -25,6 +25,12 @@ pub enum ClientMessage {
     ListUsers { session_id: SessionId },
     /// Notify the server of a graceful disconnect.
     Disconnect { session_id: SessionId },
+    /// Change the authenticated user's password.
+    ChangePassword {
+        session_id: SessionId,
+        old_password: String,
+        new_password: String,
+    },
     /// Keep-alive ping.
     Ping,
 }
@@ -53,6 +59,8 @@ pub enum ServerMessage {
     SystemNotice { content: String, timestamp: Timestamp },
     /// Keep-alive pong.
     Pong,
+    /// Result of a password-change attempt.
+    ChangePasswordResult { success: bool, message: String },
     /// Server is shutting down.
     ServerShutdown { message: String },
 }

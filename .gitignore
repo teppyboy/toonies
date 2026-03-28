@@ -1,1 +1,18 @@
 /target/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# AI agents
+.agents/
+.claude/
+.claire/
+skills-lock.json
+
+# OS
+.DS_Store
+Thumbs.db

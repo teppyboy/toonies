@@ -6,6 +6,7 @@ use ratatui::{
     widgets::{Block, Paragraph},
 };
 use crate::app::{App, ChatLine, ChatLineKind, ConnectionStatus};
+use crate::command::suggestion;
 
 fn render_line(m: &ChatLine) -> Line<'_> {
     match m.kind {
@@ -78,8 +79,12 @@ pub fn draw(frame: &mut Frame, app: &App) {
         chunks[2],
     );
 
+    let mut input_spans = vec![Span::raw(format!("> {}", app.input))];
+    if let Some(sug) = suggestion(&app.input) {
+        input_spans.push(Span::styled(sug, Style::default().fg(Color::DarkGray)));
+    }
     frame.render_widget(
-        Paragraph::new(format!("> {}", app.input)).block(Block::bordered().title(" Chat ")),
+        Paragraph::new(Line::from(input_spans)).block(Block::bordered().title(" Chat ")),
         chunks[3],
     );
     frame.set_cursor_position((
