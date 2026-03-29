@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "toonies-client"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "toonies-common",
+    "textual>=0.80",
+]
+
+[project.scripts]
+toonies = "toonies_client.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/toonies_client"]

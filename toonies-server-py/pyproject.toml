@@ -7,7 +7,7 @@ name = "toonies-server"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "msgpack>=1.1",
+    "toonies-common",
     "argon2-cffi>=23.1",
     "structlog>=24.4",
 ]

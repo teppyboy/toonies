@@ -1,10 +1,3 @@
-class ProtocolError(Exception):
-    pass
+from toonies_common.exceptions import ProtocolError
 
-
-class AuthError(Exception):
-    pass
-
-
-class SessionError(Exception):
-    pass
+__all__ = ["ProtocolError"]
