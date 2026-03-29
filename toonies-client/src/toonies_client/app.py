@@ -80,6 +80,7 @@ class ChatInput(Input):
     BINDINGS: ClassVar = [
         Binding("up", "history_prev", show=False, priority=True),
         Binding("down", "history_next", show=False, priority=True),
+        Binding("tab", "suggest", show=False, priority=True),
     ]
 
     def __init__(self, **kwargs):
@@ -93,6 +94,11 @@ class ChatInput(Input):
             self._history.append(line)
         self._history_pos = None
         self._history_draft = ""
+
+    def action_suggest(self) -> None:
+        if self._suggestion:
+            self.value = self._suggestion
+            self.cursor_position = len(self.value)
 
     def action_history_prev(self) -> None:
         if not self._history:
