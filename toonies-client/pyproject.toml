@@ -14,5 +14,8 @@ dependencies = [
 [project.scripts]
 toonies = "toonies_client.__main__:main"
 
+[tool.uv.sources]
+toonies-common = { workspace = true }
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/toonies_client"]

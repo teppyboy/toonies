@@ -13,24 +13,31 @@ A real-time terminal chat application written in Python. Client-server architect
 ## Requirements
 
 - Python 3.12+
+- [uv](https://docs.astral.sh/uv/)
 
 ## Install
 
 ```bash
-pip install -e toonies-common/ -e toonies-server/ -e toonies-client/
+uv sync
 ```
 
 ## Run
 
 ```bash
 # Start server (default: 0.0.0.0:7878)
-toonies-server
+uv run toonies-server
 
 # Custom address
-toonies-server 0.0.0.0:9999
+uv run toonies-server 0.0.0.0:9999
 
 # Start client
-toonies
+uv run toonies
+```
+
+## Test
+
+```bash
+uv run pytest
 ```
 
 ## Client Commands

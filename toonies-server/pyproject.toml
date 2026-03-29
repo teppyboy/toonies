@@ -15,15 +15,8 @@ dependencies = [
 [project.scripts]
 toonies-server = "toonies_server.__main__:main"
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.3",
-    "pytest-asyncio>=0.24",
-]
+[tool.uv.sources]
+toonies-common = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/toonies_server"]
-
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["tests"]
