@@ -1,37 +1,36 @@
 # toonies
 
-A real-time terminal chat application built in Rust. Client-server architecture with a TUI frontend, user authentication, and binary MessagePack protocol.
+A real-time terminal chat application written in Python. Client-server architecture with a TUI frontend, user authentication, and binary MessagePack protocol.
 
 ## Project Structure
 
-| Crate | Description |
+| Package | Description |
 |---|---|
-| `toonies-common` | Shared protocol types, message definitions, error handling |
-| `toonies-server` | TCP/UDP server with auth, session management, message routing |
-| `toonies-client` | TUI client built with ratatui + crossterm |
+| `toonies-common` | Shared protocol: MessagePack codec, framing, config, exceptions |
+| `toonies-server` | asyncio TCP server with Argon2 auth, session management, broadcast |
+| `toonies-client` | Textual TUI client with slash commands, history, and autosuggestion |
 
-## Features
+## Requirements
 
-- User registration and login with Argon2 password hashing
-- Real-time broadcast chat with system notifications
-- Slash commands with tab-completion and history
-- Length-prefixed MessagePack wire protocol over TCP
-- Graceful shutdown with Ctrl+C
+- Python 3.12+
 
-## Build
+## Install
 
 ```bash
-cargo build --release
+pip install -e toonies-common/ -e toonies-server/ -e toonies-client/
 ```
 
 ## Run
 
 ```bash
 # Start server (default: 0.0.0.0:7878)
-cargo run -p toonies-server
+toonies-server
+
+# Custom address
+toonies-server 0.0.0.0:9999
 
 # Start client
-cargo run -p toonies-client
+toonies
 ```
 
 ## Client Commands
@@ -40,17 +39,29 @@ cargo run -p toonies-client
 |---|---|
 | `/register <user> <pass>` | Create an account |
 | `/login <user> <pass>` | Log in |
+| `/logout` | Log out |
 | `/users` | List online users |
 | `/passwd <old> <new>` | Change password |
-| `/set-server <addr>` | Change server address |
+| `/set-server <host:port>` | Change server address and reconnect |
 | `/help` | Show all commands |
-| `/quit` | Exit |
+| `/exit` or `/quit` | Exit |
 
-## Configuration
+## Client Shortcuts
 
-- **Server**: Custom address via CLI argument — `cargo run -p toonies-server 127.0.0.1:9999`
-- **Client**: Default connects to `127.0.0.1:7878`, changeable via `/set-server`
-- **Logging**: Server uses `RUST_LOG` env var; client logs to `toonies-client.log`
+| Key | Action |
+|---|---|
+| `Tab` | Accept command autosuggestion |
+| `Up` / `Down` | Browse input history |
+| `Ctrl+C` twice | Exit |
+| `Escape` | Exit |
+
+## Protocol
+
+Length-prefixed MessagePack over TCP (4-byte big-endian length + payload, max 64 KiB), wire-compatible with the original Rust implementation.
+
+## Legacy
+
+The original Rust implementation (ratatui client, tokio server) is preserved on the [`legacy/rust`](../../tree/legacy/rust) branch.
 
 ## License
 
